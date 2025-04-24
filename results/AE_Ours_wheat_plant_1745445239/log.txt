@@ -1,0 +1,10 @@
+[2025-04-23 16:53:59,743::test::INFO] [ARGS::ckpt] 'logs_ae/AE_2025_04_09__18_52_35/ckpt_0.004541_20000.pt'
+[2025-04-23 16:53:59,744::test::INFO] [ARGS::categories] ['wheat_plant']
+[2025-04-23 16:53:59,744::test::INFO] [ARGS::save_dir] './results'
+[2025-04-23 16:53:59,744::test::INFO] [ARGS::device] 'cuda'
+[2025-04-23 16:53:59,744::test::INFO] [ARGS::dataset_path] './data/dataset'
+[2025-04-23 16:53:59,744::test::INFO] [ARGS::batch_size] 64
+[2025-04-23 16:53:59,744::test::INFO] [ARGS::rotate] False
+[2025-04-23 16:54:00,128::test::INFO] Loading datasets...
+[2025-04-23 16:54:00,130::test::INFO] Loading model...
+[2025-04-23 16:55:39,838::test::INFO] Saving point clouds...

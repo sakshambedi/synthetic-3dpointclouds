@@ -1,0 +1,21 @@
+[2025-04-23 21:54:43,230::test::INFO] [ARGS ckpt] 'logs_ae/AE_2025_04_23__21_12_04/ckpt_0.014577_10000.pt'
+[2025-04-23 21:54:43,231::test::INFO] [ARGS categories] ['wheat_plant']
+[2025-04-23 21:54:43,231::test::INFO] [ARGS save_dir] 'gen_samples'
+[2025-04-23 21:54:43,231::test::INFO] [ARGS device] 'cuda'
+[2025-04-23 21:54:43,231::test::INFO] [ARGS dataset_path] './data/dataset'
+[2025-04-23 21:54:43,231::test::INFO] [ARGS batch_size] 128
+[2025-04-23 21:54:43,231::test::INFO] [ARGS rotate] False
+[2025-04-23 21:54:43,231::test::INFO] [ARGS num_images] 10
+[2025-04-23 21:54:43,231::test::INFO] [ARGS num_points] 2048
+[2025-04-23 21:54:43,531::test::INFO] Loading dataset...
+[2025-04-23 21:54:43,533::test::INFO] Loading model...
+[2025-04-23 21:56:19,743::test::INFO] Saved image 1/10: gen_samples/AE_wheat_plant_1745463283/recon_000.png
+[2025-04-23 21:56:19,793::test::INFO] Saved image 2/10: gen_samples/AE_wheat_plant_1745463283/recon_001.png
+[2025-04-23 21:56:19,843::test::INFO] Saved image 3/10: gen_samples/AE_wheat_plant_1745463283/recon_002.png
+[2025-04-23 21:56:19,893::test::INFO] Saved image 4/10: gen_samples/AE_wheat_plant_1745463283/recon_003.png
+[2025-04-23 21:56:19,941::test::INFO] Saved image 5/10: gen_samples/AE_wheat_plant_1745463283/recon_004.png
+[2025-04-23 21:56:19,991::test::INFO] Saved image 6/10: gen_samples/AE_wheat_plant_1745463283/recon_005.png
+[2025-04-23 21:56:20,040::test::INFO] Saved image 7/10: gen_samples/AE_wheat_plant_1745463283/recon_006.png
+[2025-04-23 21:56:20,090::test::INFO] Saved image 8/10: gen_samples/AE_wheat_plant_1745463283/recon_007.png
+[2025-04-23 21:56:20,139::test::INFO] Saved image 9/10: gen_samples/AE_wheat_plant_1745463283/recon_008.png
+[2025-04-23 21:56:20,187::test::INFO] Saved image 10/10: gen_samples/AE_wheat_plant_1745463283/recon_009.png
