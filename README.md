@@ -1,6 +1,6 @@
-# Diffusion-Point-Cloud (PointCNN version)
+# Diffusion Point Cloud Autoencoder for Wheat3D
 
-This project is based on the open source implementation of the paper [**“Diffusion Probabilistic Models for 3D Point Cloud Generation”**](https://arxiv.org/abs/2103.01458), extending its original version and replacing the **backbone** of point cloud feature extraction from **PointNet** to **PointCNN**. This version achieves better generation quality and diversity on several 3D point cloud datasets. The project aims to reduce data collection time from 90 days to minutes by generating high-fidelity 3D shapes via learned latent representations.
+This project is based on [`luost26/diffusion-point-cloud`](https://github.com/luost26/diffusion-point-cloud), the official implementation by Shitong Luo and Wei Hu of the paper [**“Diffusion Probabilistic Models for 3D Point Cloud Generation”**](https://arxiv.org/abs/2103.01458) (CVPR 2021), released under the MIT licence (see [`LICENSE`](./LICENSE)). The model code is theirs; this repository is adapted to the [Wheat3D](https://huggingface.co/datasets/sakshambedi/wheat3d_pointcloud) dataset of wheat-plant point clouds. It keeps the original **PointNet** encoder and fine-tunes the diffusion decoder on Wheat3D. The project aims to reduce data collection time from 90 days to minutes by generating high-fidelity 3D shapes via learned latent representations.
 
 **Input:** Normalized 3D point clouds (e.g., 2048 points per object)  
 **Output:** Reconstructed or synthetic 3D point clouds from latent encodings
@@ -21,6 +21,8 @@ Before running, ensure you've installed all dependencies listed in [`requirement
 
 ```txt
 ├── train_ae.py
+├── test_ae.py
+├── wheat_gen.py
 ├── models/
 │   ├── autoencoder.py
 │   ├── diffusion.py
@@ -38,10 +40,12 @@ Before running, ensure you've installed all dependencies listed in [`requirement
 ```
 
 - **train_ae.py:** Train the autoencoder with diffusion decoder
+- **test_ae.py:** Reconstruct a dataset split with a checkpoint and report Chamfer distance and EMD
+- **wheat_gen.py:** Reconstruct a dataset split and save `.npy` outputs and `.png` renders
 - **models/autoencoder.py:** Defines AE combining encoder and decoder
 - **models/diffusion.py:** Forward and reverse diffusion processes
 - **models/encoders/pointnet.py:** PointNet encoder
-- **models/encoders/pointcnn.py:** Optional PointCNN encoder
+- **models/encoders/pointcnn.py:** Experimental PointCNN encoder (not used by the autoencoder)
 - **models/flow.py:** Latent flow models (for VAE)
 - **utils/dataset.py:** `Wheat3DPointCloud` dataset with normalization and resampling
 - **utils/transform.py:** Point cloud augmentations (rotate, jitter, scale)
@@ -228,6 +232,7 @@ make sample
 
 This command uses:
 
+- The held-out `test` split (pass `--split train` to `wheat_gen.py` for the old behaviour)
 - Checkpoint from pretrained/GEN_WHEAT_PLANT.pt
 - Saves outputs to gen_samples/AE_wheat_plant_<timestamp>
 - Generates 10 reconstructed images (by default)
@@ -282,11 +287,55 @@ Run `python train_ae.py --help` for full options. Key arguments:
 | `--num_inspect_batches`   | Number of batches to run through the inspection/visualization step.                                      |
 | `--num_inspect_pointclouds` | Number of point clouds to visualize per batch during inspection.                                        |
 
+## Evaluation and its limits
+
+Read this before quoting any number from this repository.
+
+**Splits.** `Wheat3dPointCloud` lists the `.npy` files, sorts them by name and cuts them 80/10/10: of the 405 clouds, 324 are `train`, 40 are `val` and 41 are `test`.
+
+**What changed.** Every script used to build its dataset without naming a split, so it got the default, `train`. Validation during training (`train_ae.py`), evaluation (`test_ae.py`) and sampling (`wheat_gen.py`) therefore all ran on the 324 training clouds. They now default to held-out data:
+
+| Script | Flag | Default | Old behaviour |
+| --- | --- | --- | --- |
+| `train_ae.py` | `--val_split` | `val` | `--val_split train` |
+| `test_ae.py` | `--split` | `test` | `--split train` |
+| `wheat_gen.py` | `--split` | `test` | `--split train` |
+
+`test_ae.py` also logs the Chamfer distance and EMD of its reconstructions again; the upstream script did this, but the call had been dropped here.
+
+**Figures recorded before this change were computed on the training split.** That includes the Chamfer distances in the checkpoint file names and the outputs under `results/` and `gen_samples/`. They measure how well the model reconstructs clouds it was trained on, not how well it generalises.
+
+**The committed checkpoint is worse than the one it started from.** `pretrained/GEN_WHEAT_PLANT.pt` was saved as `ckpt_0.014577_10000.pt`: 10,000 further iterations resumed from `ckpt_0.004541_20000.pt`. The number in each name is the validation Chamfer distance at save time, on the training split in both cases. It rose from 0.004541 to 0.014577, so on the only metric recorded, the fine-tuning run that produced the committed checkpoint made reconstruction worse. The starting checkpoint is not in the repository.
+
+**The committed checkpoint has no clean held-out set.** Until this change the file list was not sorted, so the 324 training clouds were whichever files the training machine's filesystem returned first. That order was not recorded. Sorting makes the split reproducible from now on, but some of today's `val` and `test` clouds were probably in the old training set. A held-out number for `GEN_WHEAT_PLANT.pt` is therefore not a clean generalisation measurement; a clean one needs a model retrained with the sorted split.
+
+**The sorted split is a split by variety.** File names start with the wheat variety, so sorting puts Alsen, Brandon, Chara, Gladius and most of Kukri in `train` (324 clouds), the rest of Kukri plus Teal in `val` (13 + 27) and only Teal in `test` (41). No pot appears in more than one split, so segments of one scan (`..._cluster_N.npy`, `..._combined.npy`) stay together. The consequence is that `test` measures reconstruction of a variety that a model trained on this split has never seen, which is a harder and different question from reconstructing unseen plants of familiar varieties.
+
+**Evaluation adds jitter.** The scripts apply `RandomJitter` (Gaussian noise, sigma 0.01) to the reference clouds at evaluation time as well as during training, so the references are noisy copies of the data.
+
+### Measured on the sorted splits
+
+One run each of the committed checkpoint on CPU (15 November 2026), seed 2020 from the checkpoint, jitter on, no rotation:
+
+```bash
+python test_ae.py --ckpt pretrained/GEN_WHEAT_PLANT.pt --device cpu --batch_size 64 --split test
+python test_ae.py --ckpt pretrained/GEN_WHEAT_PLANT.pt --device cpu --batch_size 64 --split val
+```
+
+| Split | Clouds | Chamfer distance | EMD (Sinkhorn approximation) |
+| --- | --- | --- | --- |
+| `val` | 40 | 0.015404 | 0.010607 |
+| `test` | 41 | 0.018096 | 0.013181 |
+
+These are not clean held-out results for this checkpoint, for the reason given above: the split it was trained with is unknown. They are also not directly comparable with the 0.014577 in the checkpoint name, which was computed during training on the training split with random rotation enabled. The training split was not re-evaluated here (324 clouds take roughly half an hour on CPU); run `--split train` to get the like-for-like figure.
+
 ## References
 
-- [Diffusion Probabilistic Models for 3D Point Cloud Generation](https://arxiv.org/abs/2103.01458) Shitong Luo, Wei Hu
+- [Diffusion Probabilistic Models for 3D Point Cloud Generation](https://arxiv.org/abs/2103.01458), Shitong Luo and Wei Hu, CVPR 2021
+- Upstream code: [luost26/diffusion-point-cloud](https://github.com/luost26/diffusion-point-cloud) (MIT licence, Copyright (c) 2021 Shitong Luo)
 
 ## Acknowledgements
 
-- Thanks to the original open source project author for providing the basic framework and reference implementation.
+- The model, diffusion and training code come from Shitong Luo and Wei Hu's [diffusion-point-cloud](https://github.com/luost26/diffusion-point-cloud) (MIT licence). The Wheat3D dataset class, the augmentations, the fine-tuning setup and the sampling script were added here.
+- The evaluation metrics in `evaluation/` come from [PointFlow](https://github.com/stevenygd/PointFlow/tree/master/metrics), as the file header states.
 - Thank you to Christopher Henry , Sajjad Heydari and Rob Guderian for supporting us for the project and providing us with the resources to complete this task.

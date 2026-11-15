@@ -17,7 +17,10 @@ class Wheat3dPointCloud(Dataset):
     ):
         self.root_dir = root_dir
 
-        all_files = [f for f in os.listdir(self.root_dir) if f.endswith(".npy")]
+        # Sort so the split is the same on every machine. os.listdir() returns
+        # files in an arbitrary, filesystem-dependent order, which made the
+        # train/val/test membership differ from one machine to the next.
+        all_files = sorted(f for f in os.listdir(self.root_dir) if f.endswith(".npy"))
         if not all_files:
             raise ValueError(f"No .npy files found in {root_dir}.")
         

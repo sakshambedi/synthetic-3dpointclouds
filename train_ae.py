@@ -94,6 +94,15 @@ parser.add_argument(
     help="Number of point clouds per validation batch."
 )
 parser.add_argument(
+    "--val_split",
+    type=str,
+    default="val",
+    choices=["train", "val", "test"],
+    help="Dataset split used for validation metrics and for naming checkpoints. "
+    "Defaults to the held-out 'val' split. Use '--val_split train' for the old "
+    "behaviour (validating on the training data)."
+)
+parser.add_argument(
     "--rotate",
     type=eval,
     default=False,
@@ -229,8 +238,14 @@ if args.rotate:
 logger.info("Transform: %s" % repr(transform))
 logger.info("Loading datasets...")
 
-train_dset = Wheat3dPointCloud(args.dataset_path, transform=transform, n_points=2048)
-val_dset = Wheat3dPointCloud(args.dataset_path, transform=transform, n_points=2048)
+train_dset = Wheat3dPointCloud(args.dataset_path, split="train", transform=transform, n_points=2048)
+val_dset = Wheat3dPointCloud(
+    args.dataset_path, split=args.val_split, transform=transform, n_points=2048
+)
+logger.info(
+    "Train split: %d point clouds | validation split %r: %d point clouds"
+    % (len(train_dset), args.val_split, len(val_dset))
+)
 train_iter = get_data_iterator(
     DataLoader(
         train_dset,
