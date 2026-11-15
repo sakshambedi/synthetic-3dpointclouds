@@ -1,6 +1,6 @@
-# Diffusion-Point-Cloud (PointCNN version)
+# Diffusion Point Cloud Autoencoder for Wheat3D
 
-This project is based on the open source implementation of the paper [**“Diffusion Probabilistic Models for 3D Point Cloud Generation”**](https://arxiv.org/abs/2103.01458), extending its original version and replacing the **backbone** of point cloud feature extraction from **PointNet** to **PointCNN**. This version achieves better generation quality and diversity on several 3D point cloud datasets. The project aims to reduce data collection time from 90 days to minutes by generating high-fidelity 3D shapes via learned latent representations.
+This project is based on the open source implementation of the paper [**“Diffusion Probabilistic Models for 3D Point Cloud Generation”**](https://arxiv.org/abs/2103.01458), adapted to the [Wheat3D](https://huggingface.co/datasets/sakshambedi/wheat3d_pointcloud) dataset of wheat-plant point clouds. It keeps the original **PointNet** encoder and fine-tunes the diffusion decoder on Wheat3D. The project aims to reduce data collection time from 90 days to minutes by generating high-fidelity 3D shapes via learned latent representations.
 
 **Input:** Normalized 3D point clouds (e.g., 2048 points per object)  
 **Output:** Reconstructed or synthetic 3D point clouds from latent encodings
@@ -41,7 +41,7 @@ Before running, ensure you've installed all dependencies listed in [`requirement
 - **models/autoencoder.py:** Defines AE combining encoder and decoder
 - **models/diffusion.py:** Forward and reverse diffusion processes
 - **models/encoders/pointnet.py:** PointNet encoder
-- **models/encoders/pointcnn.py:** Optional PointCNN encoder
+- **models/encoders/pointcnn.py:** Experimental PointCNN encoder (not used by the autoencoder)
 - **models/flow.py:** Latent flow models (for VAE)
 - **utils/dataset.py:** `Wheat3DPointCloud` dataset with normalization and resampling
 - **utils/transform.py:** Point cloud augmentations (rotate, jitter, scale)
