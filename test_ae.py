@@ -22,6 +22,14 @@ parser.add_argument('--device', type=str, default='cuda')
 parser.add_argument('--dataset_path', type=str, default='./data/dataset')
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument(
+    '--split',
+    type=str,
+    default='test',
+    choices=['train', 'val', 'test'],
+    help="Dataset split to evaluate. Defaults to the held-out 'test' split. "
+         "Use '--split train' for the old behaviour (evaluating on training data)."
+)
+parser.add_argument(
     "--rotate",
     type=eval,
     default=False,
@@ -40,7 +48,7 @@ for k, v in vars(args).items():
     logger.info('[ARGS::%s] %s' % (k, repr(v)))
 
 # Checkpoint
-ckpt = torch.load(args.ckpt, weights_only=False)
+ckpt = torch.load(args.ckpt, weights_only=False, map_location=args.device)
 seed_all(ckpt['args'].seed)
 
 
@@ -49,7 +57,8 @@ transformer = Compose([RandomJitter()])
 if args.rotate:
     transformer = Compose([RandomRotation(), RandomJitter()])
 logger.info('Loading datasets...')
-test_dset = Wheat3dPointCloud(args.dataset_path, transform=transformer, n_points=2048)
+test_dset = Wheat3dPointCloud(args.dataset_path, split=args.split, transform=transformer, n_points=2048)
+logger.info('Evaluating on split %r: %d point clouds' % (args.split, len(test_dset)))
 test_loader = DataLoader(test_dset, batch_size=args.batch_size, num_workers=0)
 
 # Model
@@ -80,3 +89,9 @@ all_recons = torch.cat(all_recons, dim=0)
 logger.info('Saving point clouds...')
 np.save(os.path.join(save_dir, 'ref.npy'), all_ref.numpy())
 np.save(os.path.join(save_dir, 'out.npy'), all_recons.numpy())
+
+logger.info('Start computing metrics...')
+metrics = EMD_CD(all_recons.to(args.device), all_ref.to(args.device), batch_size=args.batch_size)
+cd, emd = metrics['MMD-CD'].item(), metrics['MMD-EMD'].item()
+logger.info('[%s split, %d clouds] CD:  %.12f' % (args.split, len(test_dset), cd))
+logger.info('[%s split, %d clouds] EMD: %.12f' % (args.split, len(test_dset), emd))

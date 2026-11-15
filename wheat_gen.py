@@ -36,6 +36,9 @@ parser.add_argument('--rotate',       type=eval, default=False, choices=[True, F
                     help='Apply random 3D rotations (data augmentation)')
 parser.add_argument('--num_images',   type=int, default=1,help='Number of reconstructed point-cloud images to save')
 parser.add_argument('--num_points',   type=int, default=2048,help='Number of  point-cloud in an image ')
+parser.add_argument('--split',        type=str, default='test', choices=['train', 'val', 'test'],
+                    help="Dataset split to reconstruct. Defaults to the held-out 'test' split. "
+                         "Use '--split train' for the old behaviour (training data).")
 args = parser.parse_args()
 
 # 2. unify save_dir creation, avoid race conditions
@@ -62,6 +65,7 @@ transformer = Compose(transforms)
 
 logger.info('Loading dataset...')
 test_dset   = Wheat3dPointCloud(args.dataset_path,
+                                split=args.split,
                                 transform=transformer,
                                 n_points=args.num_points)
 test_loader = DataLoader(test_dset,
